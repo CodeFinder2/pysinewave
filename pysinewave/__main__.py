@@ -19,7 +19,7 @@ white_christmas = [4,4,4,4,5,4,3,4,5,5,5,5,6,7,7,7,7,9,11,12,14,12,11,9,7,7,7,7,
 
 def play_song(song, note_per_second=4):
 
-    sinewave = SineWave(song[0],24)
+    sinewave = SineWave(song[0], 24, wave_file="test.wav")  # optional to specify a file
 
     sinewave.play()
 
