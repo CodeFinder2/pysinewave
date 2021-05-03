@@ -2,7 +2,6 @@ import sys
 
 import numpy as np
 import sounddevice as sd
-import scipy.io.wavfile as wav
 
 from pysinewave import utilities
 from pysinewave import sinewave_generator
@@ -42,8 +41,14 @@ class SineWave:
 
     def _finished_callback(self):
         if self.wave_file:
-            print("Writing %d bytes to WAVE file \"%s\"..." % (self.collected_data.size * self.collected_data.itemsize, self.wave_file))
-            wav.write(self.wave_file, self.fs, self.collected_data)
+            print("Writing %d bytes to WAVE file \"%s\"..." % (self.collected_data.size * self.collected_data.itemsize,
+                                                               self.wave_file))
+            try:
+                import scipy.io.wavfile as wav
+                wav.write(self.wave_file, self.fs, self.collected_data)
+            except ImportError as e:
+                print("Missing scipy.io.wavefile, see requirements.txt. Unable to save WAVE file.\n" + str(e),
+                      file=sys.stderr)
 
     def play(self):
         '''Plays the sinewave (in a separate thread). Changes in frequency or amplitude will transition smoothly.'''
