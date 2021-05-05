@@ -12,7 +12,7 @@ class SineWave:
         and amplitude (volume).'''
 
     def __init__(self, pitch=0, pitch_per_second=12, decibels=0, decibels_per_second=1,
-                samplerate=utilities.DEFAULT_SAMPLE_RATE, wave_file=None):
+                samplerate=utilities.DEFAULT_SAMPLE_RATE, collect_data=False, silent=False):
         self.sinewave_generator = sinewave_generator.SineWaveGenerator(
                                     pitch=pitch, pitch_per_second=pitch_per_second,
                                     decibels = decibels, decibels_per_second=decibels_per_second,
@@ -21,7 +21,9 @@ class SineWave:
         # Create the output stream
         self.collected_data = np.array([])
         self.fs = samplerate
-        self.wave_file = wave_file
+        self.collect_data = collect_data
+        self.finished = False
+        self.silent = silent
         self.output_stream = sd.OutputStream(channels=1, callback=lambda *args: self._callback(*args),
                                 finished_callback=lambda *args: self._finished_callback(*args), samplerate=samplerate)
 
@@ -29,26 +31,27 @@ class SineWave:
     def _callback(self, outdata, frames, time, status):
         '''Callback function for the output stream.'''
         # Print any error messages we receive
-        if status:
+        if status and not self.silent:
             print(status, file=sys.stderr)
 
         # Get and use the sinewave's next batch of data
         data = self.sinewave_generator.next_data(frames)
         outdata[:] = data.reshape(-1, 1)
         # Collect data for writing it to a file later when the stream is stopped (if desired):
-        if self.wave_file:
+        if self.collect_data:
             self.collected_data = np.append(self.collected_data, outdata[:])
 
     def _finished_callback(self):
-        if self.wave_file:
-            print("Writing %d bytes to WAVE file \"%s\"..." % (self.collected_data.size * self.collected_data.itemsize,
-                                                               self.wave_file))
-            try:
-                import scipy.io.wavfile as wav
-                wav.write(self.wave_file, self.fs, self.collected_data)
-            except ImportError as e:
-                print("Missing scipy.io.wavefile, see requirements.txt. Unable to save WAVE file.\n" + str(e),
-                      file=sys.stderr)
+        '''Callback function to be called once stop() has been issued.'''
+        self.finished = True
+
+    def get_data(self):
+        '''Returns all collected data, if any.'''
+        return self.collected_data
+
+    def is_done(self):
+        '''Checks if the finished callback has been invoked.'''
+        return self.finished
 
     def play(self):
         '''Plays the sinewave (in a separate thread). Changes in frequency or amplitude will transition smoothly.'''
