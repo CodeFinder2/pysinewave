@@ -58,7 +58,10 @@ class SineWaveGenerator:
 
         # Convert frame information to time information
         time_array = utilities.frames_to_time_array(0, frames, self.samplerate)
-        delta_time = time_array[1] - time_array[0]
+        if len(time_array) >= 2:
+            delta_time = time_array[1] - time_array[0]
+        else:
+            delta_time = 0
 
         # Calculate the frequencies of this batch of data
         new_frequency_array = self.new_frequency_array(time_array)
